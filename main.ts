@@ -39,3 +39,4 @@ writeFileSync(
     app_path_max_bytes: 1000,
   }),
 );
+console.log(`Neon Cover Studio handed in to ${out}: app/, screenshots/ and dossier.json`);

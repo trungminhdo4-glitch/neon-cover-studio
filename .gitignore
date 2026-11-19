@@ -1,0 +1,4 @@
+# local output of `MAKEFUN_OUTPUT_DIR=out node main.ts` and editor/preview settings
+out/
+.claude/
+node_modules/

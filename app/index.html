@@ -3,21 +3,78 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cover Snap</title>
+<meta name="description" content="Neon Cover Studio: turn your photos and a caption into a multi-panel sunset or neon poster cover and export it as a PNG at 1080x1080, 1080x1350 or 1920x1080. Runs offline; photos never leave your machine.">
+<title>Neon Cover Studio</title>
 <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<main class="app">
-  <section class="controls">
-    <h1>Cover Snap</h1>
-    <p>A photo and a caption, made into a square cover.</p>
-    <label>Photo <input id="photo" type="file" accept="image/*"></label>
-    <label>Caption <input id="caption" type="text" maxlength="40" value="Sunset Heist"></label>
-    <button id="export" type="button">Export PNG 1080 x 1080</button>
-    <p id="status" role="status"></p>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark"></span>NEON COVER STUDIO</div>
+  <div class="segmented" id="formats" role="radiogroup" aria-label="Post size"></div>
+  <div class="export-group">
+    <button id="export" class="primary" type="button">Export PNG</button>
+    <button id="export-all" type="button" title="Download the cover in all three post sizes">All 3 sizes</button>
+  </div>
+</header>
+<main class="studio">
+  <aside class="panel left">
+    <section>
+      <h2><span class="step">1</span> Photos</h2>
+      <label class="add-photos" id="drop-zone">
+        <input id="photo-input" type="file" accept="image/*" multiple>
+        <strong>+ Add your photos</strong>
+        <small>or drop / paste them here &middot; stays on this device</small>
+      </label>
+      <div class="tray" id="tray" aria-label="Photo library"></div>
+      <div class="row">
+        <button id="fill-one" type="button" title="Fill every panel with the highlighted photo, each cropped differently">One photo, all panels</button>
+        <button id="mix-all" type="button" title="Spread all your photos across the panels">Mix photos</button>
+      </div>
+    </section>
+    <section>
+      <h2><span class="step">2</span> Layout</h2>
+      <div class="layouts" id="layouts"></div>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="canvas-wrap" id="canvas-wrap">
+      <canvas id="preview" aria-label="Live cover preview: click a panel to select it, drag to move the photo, scroll to zoom"></canvas>
+    </div>
+    <p class="hint" id="hint">Click a panel &middot; drag to position &middot; scroll to zoom &middot; double-click to reset</p>
   </section>
-  <canvas id="cover" width="1080" height="1080" aria-label="The cover"></canvas>
+
+  <aside class="panel right">
+    <section>
+      <h2><span class="step">3</span> Caption</h2>
+      <textarea id="title" rows="2" maxlength="60" spellcheck="false" aria-label="Title">HEAT RISES</textarea>
+      <input id="tagline" type="text" maxlength="48" spellcheck="false" aria-label="Tagline" value="SUMMER ON THE STRIP">
+      <div class="chips" id="styles" role="radiogroup" aria-label="Lettering style"></div>
+      <label class="check"><input id="lean" type="checkbox" checked> Forward lean</label>
+    </section>
+    <section>
+      <h2><span class="step">4</span> Colour grade</h2>
+      <div class="swatches" id="grades" role="radiogroup" aria-label="Colour grade"></div>
+      <label class="slider">Grade strength <input id="strength" type="range" min="0" max="100" value="72"></label>
+      <label class="slider">Gutters <input id="gutter" type="range" min="0" max="30" value="12"></label>
+      <div class="row">
+        <label class="check"><input id="grain" type="checkbox" checked> Film grain</label>
+        <label class="check"><input id="white-frame" type="checkbox"> White frame</label>
+      </div>
+    </section>
+    <section id="panel-tools">
+      <h2><span class="step">5</span> <span id="panel-label">Panel 1</span></h2>
+      <label class="slider">Zoom <input id="zoom" type="range" min="100" max="400" value="100"></label>
+      <label class="slider">Left / right <input id="pos-x" type="range" min="0" max="1000" value="500"></label>
+      <label class="slider">Up / down <input id="pos-y" type="range" min="0" max="1000" value="500"></label>
+      <div class="row">
+        <button id="flip" type="button">Mirror</button>
+        <button id="reset-crop" type="button">Reset crop</button>
+      </div>
+    </section>
+  </aside>
 </main>
+<footer class="statusbar"><span id="status" role="status">Ready: pick a layout, add your photos, export.</span></footer>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

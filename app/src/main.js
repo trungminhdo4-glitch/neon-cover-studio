@@ -7,6 +7,7 @@ import { GRADES } from './grades.js';
 import { LAYOUTS, MAX_PANELS } from './layouts.js';
 import { TITLE_STYLES } from './lettering.js';
 import { KIT_PHOTOS, paintedSamples } from './samples.js';
+import { DEFAULT_LABELS } from './dressing.js';
 import { runShot } from './shots.js';
 
 export const FORMATS = {
@@ -30,22 +31,29 @@ let userCount = 0;
 
 export const doc = {
   format: 'landscape',
-  layout: 'mosaic',
+  layout: 'keyart',
   grade: 'sunset',
-  strength: 0.72,
-  style: 'chrome',
+  strength: 0.8,
+  style: 'vice',
   lean: true,
   title: 'HEAT RISES',
   tagline: 'SUMMER ON THE STRIP',
+  extras: true,
+  badge: 'SEASON|ONE',
+  strip: 'EVERY SUNSET HAS A PRICE',
+  credits: 'A NEON COVER STUDIO PICTURE - ALL PHOTOS YOUR OWN - LETTERED AND GRADED ON YOUR MACHINE',
   gutter: 0.012,
   frame: '#05010a',
   grain: true,
   panels: [],
 };
 
-function slot(photo, crop = VARIED_CROPS[0]) {
-  return { photo, zoom: crop[0], cx: crop[1], cy: crop[2], flip: false };
+function slot(photo, crop = VARIED_CROPS[0], label = '') {
+  return { photo, zoom: crop[0], cx: crop[1], cy: crop[2], flip: false, label };
 }
+
+/** The plate text panel `i` keeps when its photo changes. */
+const labelOf = (i) => doc.panels[i]?.label ?? DEFAULT_LABELS[i % DEFAULT_LABELS.length];
 
 /** Puts `ids` into the panels in turn, each repeat of a photo cropped differently from the last. */
 export function fillPanels(ids) {
@@ -54,7 +62,7 @@ export function fillPanels(ids) {
     const id = ids[i % ids.length];
     const n = seen.get(id) ?? 0;
     seen.set(id, n + 1);
-    return slot(id, VARIED_CROPS[(n + (ids.length === 1 ? 0 : i)) % VARIED_CROPS.length]);
+    return slot(id, VARIED_CROPS[(n + (ids.length === 1 ? 0 : i)) % VARIED_CROPS.length], labelOf(i));
   });
 }
 
@@ -164,7 +172,7 @@ export async function addPhotos(files) {
   if (!added.length) return;
   picked = added[0];
   if (firstOnes) fillPanels(added);
-  else doc.panels[selected] = slot(added[0]);
+  else doc.panels[selected] = slot(added[0], VARIED_CROPS[0], labelOf(selected));
   renderTray();
   updatePanelTools();
   redraw();
@@ -189,7 +197,7 @@ function renderTray() {
     b.append(t, label);
     b.addEventListener('click', () => {
       picked = p.id;
-      doc.panels[selected] = slot(p.id);
+      doc.panels[selected] = slot(p.id, VARIED_CROPS[0], labelOf(selected));
       renderTray();
       updatePanelTools();
       redraw();
@@ -216,6 +224,7 @@ function updatePanelTools() {
   $('pos-x').value = Math.round(s.cx * 1000);
   $('pos-y').value = Math.round(s.cy * 1000);
   $('flip').classList.toggle('on', s.flip);
+  $('panel-text').value = s.label ?? '';
 }
 
 function toCanvas(e) {
@@ -337,6 +346,10 @@ function setupControls() {
 
   $('title').addEventListener('input', (e) => { doc.title = e.target.value; redraw(); });
   $('tagline').addEventListener('input', (e) => { doc.tagline = e.target.value; redraw(); });
+  $('badge').addEventListener('input', (e) => { doc.badge = e.target.value; redraw(); });
+  $('strip').addEventListener('input', (e) => { doc.strip = e.target.value; redraw(); });
+  $('extras').addEventListener('change', (e) => { doc.extras = e.target.checked; redraw(); });
+  $('panel-text').addEventListener('input', (e) => { doc.panels[selected].label = e.target.value; redraw(); });
   $('lean').addEventListener('change', (e) => { doc.lean = e.target.checked; redraw(); });
   $('strength').addEventListener('input', (e) => { doc.strength = e.target.value / 100; redraw(); });
   $('gutter').addEventListener('input', (e) => { doc.gutter = e.target.value / 1000; redraw(); });
@@ -379,6 +392,9 @@ export function syncControls() {
   $('title').value = doc.title;
   $('tagline').value = doc.tagline;
   $('lean').checked = doc.lean;
+  $('badge').value = doc.badge;
+  $('strip').value = doc.strip;
+  $('extras').checked = doc.extras;
   $('strength').value = Math.round(doc.strength * 100);
   $('gutter').value = Math.round(doc.gutter * 1000);
   $('grain').checked = doc.grain;
@@ -396,7 +412,7 @@ async function start() {
       photos.set(k.id, { id: k.id, name: k.name, src: img, w: img.naturalWidth, h: img.naturalHeight });
     } catch { /* a missing sample just leaves the painted ones */ }
   }
-  const order = ['boulevard', 'palms', 'pier', 'neon', 'boulevard', 'drive', 'pier', 'palms'].filter((id) => photos.has(id));
+  const order = ['boulevard', 'pier', 'neon', 'boulevard', 'drive', 'palms', 'pier', 'palms'].filter((id) => photos.has(id));
   fillPanels(order.length ? order : [...photos.keys()]);
   picked = doc.panels[0].photo;
   setupControls();

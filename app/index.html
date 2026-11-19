@@ -50,7 +50,12 @@
       <textarea id="title" rows="2" maxlength="60" spellcheck="false" aria-label="Title">HEAT RISES</textarea>
       <input id="tagline" type="text" maxlength="48" spellcheck="false" aria-label="Tagline" value="SUMMER ON THE STRIP">
       <div class="chips" id="styles" role="radiogroup" aria-label="Lettering style"></div>
-      <label class="check"><input id="lean" type="checkbox" checked> Forward lean</label>
+      <div class="row">
+        <label class="check"><input id="lean" type="checkbox" checked> Forward lean</label>
+        <label class="check"><input id="extras" type="checkbox" checked> Labels &amp; badge</label>
+      </div>
+      <label class="field">Badge <small>(| splits lines)</small><input id="badge" type="text" maxlength="24" spellcheck="false" value="SEASON|ONE"></label>
+      <label class="field">Bottom strip<input id="strip" type="text" maxlength="40" spellcheck="false" value="EVERY SUNSET HAS A PRICE"></label>
     </section>
     <section>
       <h2><span class="step">4</span> Colour grade</h2>
@@ -64,6 +69,7 @@
     </section>
     <section id="panel-tools">
       <h2><span class="step">5</span> <span id="panel-label">Panel 1</span></h2>
+      <label class="field">Panel label <small>(place|time)</small><input id="panel-text" type="text" maxlength="32" spellcheck="false"></label>
       <label class="slider">Zoom <input id="zoom" type="range" min="100" max="400" value="100"></label>
       <label class="slider">Left / right <input id="pos-x" type="range" min="0" max="1000" value="500"></label>
       <label class="slider">Up / down <input id="pos-y" type="range" min="0" max="1000" value="500"></label>

@@ -11,12 +11,14 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-app.ts';
 
-// Neon Cover Studio hands in app/ (the multi-panel sunset/neon poster editor) and its four screenshots.
+// Neon Cover Studio hands in app/ (the multi-panel sunset/neon poster editor: Key Art layout with a hero panel,
+// four shots and a credit strip; Vice Gloss 3D lettering with a neon tagline; overlay-blend colour grades; panel
+// location plates and a starburst badge) and its four screenshots.
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
@@ -39,4 +41,6 @@ writeFileSync(
     app_path_max_bytes: 1000,
   }),
 );
-console.log(`Neon Cover Studio handed in to ${out}: app/, screenshots/ and dossier.json`);
+const shots = readdirSync(join(out, 'screenshots')).filter((name) => !name.startsWith('.')).sort();
+const dossierBytes = statSync(join(out, 'dossier.json')).size;
+console.log(`Neon Cover Studio handed in to ${out}: app/, ${shots.length} screenshots (${shots.join(', ')}) and dossier.json (${dossierBytes} bytes)`);

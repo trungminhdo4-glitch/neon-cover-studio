@@ -1,6 +1,6 @@
 [
-  { "name": "1-cover.jpg", "query": "?shot=cover&format=landscape&layout=mosaic&grade=sunset&style=chrome&title=HEAT%20RISES&tagline=SUMMER%20ON%20THE%20STRIP", "w": 1280, "h": 720 },
-  { "name": "2-editor.jpg", "query": "?shot=editor&format=landscape&layout=hero&grade=neon&style=neon&title=NIGHT%20SHIFT&tagline=THE%20STRIP%20NEVER%20SLEEPS&photos=boulevard,neon,pier,drive&panel=0", "w": 1280, "h": 720 },
-  { "name": "3-cover.jpg", "query": "?shot=cover&format=portrait&layout=hero&grade=golden&style=block&title=BOULEVARD%7CQUEEN&tagline=ONE%20LAST%20RIDE&photos=boulevard,palms,boulevard,drive", "w": 1024, "h": 1280 },
-  { "name": "4-cover.jpg", "query": "?shot=cover&format=square&layout=slash&grade=ocean&style=chrome&title=PIER%20PRESSURE&tagline=CATCH%20OF%20THE%20DAY&photos=pier", "w": 1080, "h": 1080 }
+  { "name": "1-cover.jpg", "query": "?shot=cover&format=landscape&layout=keyart&grade=sunset&style=vice&title=HEAT%20RISES&tagline=SUMMER%20ON%20THE%20STRIP&photos=boulevard,pier,neon,boulevard,palms&crop=0:1.15:0.5:0.4&crop=1:1.2:0.52:0.3&crop=3:2.6:0.16:0.48&crop=4:1:0.55:0.5", "w": 1280, "h": 720 },
+  { "name": "2-editor.jpg", "query": "?shot=editor&format=landscape&layout=keyart&grade=neon&style=vice&title=NIGHT%20SHIFT&tagline=THE%20STRIP%20NEVER%20SLEEPS&photos=boulevard,pier,neon,boulevard,drive&panel=0&status=Exported%20night-shift-1080x1080.png%2C%20night-shift-1080x1350.png%2C%20night-shift-1920x1080.png", "w": 1280, "h": 720 },
+  { "name": "3-cover.jpg", "query": "?shot=cover&format=portrait&layout=keyart&grade=golden&style=vice&title=BOULEVARD%7CQUEEN&tagline=ONE%20LAST%20RIDE&photos=boulevard,pier,boulevard,neon,palms&crop=4:1:0.6:0.5", "w": 1024, "h": 1280 },
+  { "name": "4-cover.jpg", "query": "?shot=cover&format=square&layout=keyart&grade=ocean&style=vice&title=PIER%20PRESSURE&tagline=CATCH%20OF%20THE%20DAY&photos=pier", "w": 1080, "h": 1080 }
 ]

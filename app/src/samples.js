@@ -248,6 +248,6 @@ export function paintedSamples() {
     ['drive', 'Coast Drive', paintCoastalDrive],
   ].map(([id, name, paint]) => {
     const src = paint();
-    return { id, name, src, w: src.width, h: src.height };
+    return { id, name, src, w: src.width, h: src.height, painted: true };
   });
 }

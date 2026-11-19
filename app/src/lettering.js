@@ -137,6 +137,7 @@ function unitFor(lines, boxW, boxH) {
 
 /** The three title treatments a cover can use. */
 export const TITLE_STYLES = {
+  vice: 'Vice Gloss',
   chrome: 'Sunset Chrome',
   neon: 'Neon Tube',
   block: 'Poster Block',
@@ -148,7 +149,8 @@ export const TITLE_STYLES = {
  */
 export function drawTitleBlock(ctx, box, title, tagline, style, ink, lean = true) {
   const tag = normaliseCaption(tagline).replace(/\n/g, ' ');
-  const tagShare = tag ? 0.2 : 0;
+  const scriptTag = style === 'vice';
+  const tagShare = tag ? (scriptTag ? 0.27 : 0.2) : 0;
   const titleBox = { x: box.x, y: box.y, w: box.w, h: box.h * (1 - tagShare) };
   const lines = splitCaption(title, titleBox.w, titleBox.h);
   if (!lines.length && !tag) return;
@@ -156,7 +158,7 @@ export function drawTitleBlock(ctx, box, title, tagline, style, ink, lean = true
   const lineH = (8 + STROKE) * u;
   const blockH = lines.length ? lines.length * lineH + (lines.length - 1) * 8 * LINE_GAP * u : 0;
   const tagTracking = 1.4;
-  const tu = tag ? Math.min(u * 0.34 || box.h * 0.02, (box.w * 0.92) / measureLine(tag, tagTracking)) : 0;
+  const tu = tag ? Math.min((scriptTag ? u * 0.5 : u * 0.34) || box.h * 0.02, (box.w * 0.92) / measureLine(tag, tagTracking)) : 0;
   const tagH = tag ? (8 + STROKE) * tu : 0;
   const gap = tag && lines.length ? Math.max(tu * 4, u * 1.6) : 0;
   const total = blockH + gap + tagH;
@@ -182,8 +184,9 @@ export function drawTitleBlock(ctx, box, title, tagline, style, ink, lean = true
   if (tag) {
     y += gap - (lines.length ? 8 * LINE_GAP * u : 0);
     const w = measureLine(tag, tagTracking) * tu;
-    const path = linePath(tag, cx - w / 2, y, tu, tagTracking);
-    paintTagline(ctx, path, tu, ink);
+    const shift = scriptTag ? w * 0.12 : 0;
+    const path = linePath(tag, cx - w / 2 + shift, y, tu, tagTracking);
+    if (scriptTag) paintNeonTagline(ctx, path, tu, ink); else paintTagline(ctx, path, tu, ink);
   }
   ctx.restore();
 }
@@ -203,6 +206,46 @@ function extrude(ctx, path, u, color, extra, depth, dx = 0.55, dy = 1) {
 }
 
 const STYLE_PAINTERS = {
+  /**
+   * Vice gloss: a hard drop shadow, a long extrusion in the grade's deep colour, a near-black outline, a thin cream
+   * rim, then a sunset fill (cream to orange to hot pink) with a glossy highlight along the upper strokes.
+   */
+  vice(ctx, path, box, ink) {
+    const { u } = box;
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.translate(u * 2.6, u * 3.2);
+    ctx.strokeStyle = '#05000a';
+    ctx.lineWidth = (STROKE + 2.4) * u;
+    ctx.stroke(path);
+    ctx.restore();
+    extrude(ctx, path, u, '#12021c', 2.4, 2.4, 0.5, 1);
+    extrude(ctx, path, u, ink.deep, 1.7, 1.9, 0.5, 1);
+    ctx.strokeStyle = '#12021c';
+    ctx.lineWidth = (STROKE + 2.4) * u;
+    ctx.stroke(path);
+    ctx.strokeStyle = ink.chrome[0];
+    ctx.lineWidth = (STROKE + 0.9) * u;
+    ctx.stroke(path);
+    const g = ctx.createLinearGradient(0, box.y, 0, box.y + box.h);
+    g.addColorStop(0, '#fffdf2');
+    g.addColorStop(0.3, ink.chrome[1]);
+    g.addColorStop(0.68, ink.chrome[2]);
+    g.addColorStop(1, ink.chrome[3]);
+    ctx.strokeStyle = g;
+    ctx.lineWidth = STROKE * 0.86 * u;
+    ctx.stroke(path);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(box.x - box.w, box.y - u * 2, box.w * 3, box.h * 0.42);
+    ctx.clip();
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = STROKE * 0.32 * u;
+    ctx.translate(-u * 0.35, -u * 0.35);
+    ctx.stroke(path);
+    ctx.restore();
+  },
   /** Chrome sunset: a hard horizon split in the fill, a dark outline and a deep coloured extrusion. */
   chrome(ctx, path, box, ink) {
     const { u } = box;
@@ -276,4 +319,60 @@ function paintTagline(ctx, path, u, ink) {
   ctx.strokeStyle = ink.accent;
   ctx.lineWidth = STROKE * u;
   ctx.stroke(path);
+}
+
+/** The tagline as a bent neon tube: round caps and joins, a dark backing, a wide coloured glow and a white core. */
+function paintNeonTagline(ctx, path, u, ink) {
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.transform(1, 0, -0.18, 1, 0, 0);
+  ctx.strokeStyle = 'rgba(10, 0, 22, 0.8)';
+  ctx.lineWidth = (STROKE + 2.2) * u;
+  ctx.stroke(path);
+  ctx.shadowColor = ink.neon;
+  ctx.strokeStyle = ink.neon;
+  for (const [blur, width] of [[u * 5, STROKE * 1.05], [u * 2, STROKE * 0.9]]) {
+    ctx.shadowBlur = blur;
+    ctx.lineWidth = width * u;
+    ctx.stroke(path);
+  }
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = ink.neonCore;
+  ctx.lineWidth = STROKE * 0.42 * u;
+  ctx.stroke(path);
+  ctx.restore();
+}
+
+/**
+ * Letters one line of small text (labels, badges, credits) in the app's block alphabet: cap height `capH` px, its
+ * left edge (or centre, or right edge, by `align`) at x and its top at y. Returns the width it took.
+ */
+export function drawText(ctx, text, x, y, capH, color, { tracking = 0.9, align = 'left', outline = null, weight = 1 } = {}) {
+  const line = normaliseCaption(text).replace(/\n/g, ' ');
+  if (!line) return 0;
+  const u = capH / (8 + STROKE);
+  const w = measureLine(line, tracking) * u;
+  const x0 = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  const path = linePath(line, x0, y, u, tracking);
+  ctx.save();
+  ctx.lineJoin = 'miter';
+  ctx.miterLimit = 2;
+  ctx.lineCap = 'square';
+  if (outline) {
+    ctx.strokeStyle = outline;
+    ctx.lineWidth = (STROKE * weight + 1.6) * u;
+    ctx.stroke(path);
+  }
+  ctx.strokeStyle = color;
+  ctx.lineWidth = STROKE * weight * u;
+  ctx.stroke(path);
+  ctx.restore();
+  return w;
+}
+
+/** The width `text` would take in drawText at cap height `capH`. */
+export function textWidth(text, capH, tracking = 0.9) {
+  const line = normaliseCaption(text).replace(/\n/g, ' ');
+  return line ? measureLine(line, tracking) * (capH / (8 + STROKE)) : 0;
 }

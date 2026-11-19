@@ -2,8 +2,9 @@
 // sky with its striped sun, palms and horizon grid, film grain, the gutters, then the caption lettering.
 // The same function draws the live preview and the exported PNG, so what you see is what you export.
 
-import { GRADES, gradePixels, grainPattern } from './grades.js';
-import { LAYOUTS, polygonPath, polygonToPixels, titleBox } from './layouts.js';
+import { GRADES, gradePixels, grainPattern, hexToRgb } from './grades.js';
+import { polygonPath, polygonToPixels, resolveLayout, titleBox } from './layouts.js';
+import { drawBadge, drawCreditStrip, drawPanelLabel } from './dressing.js';
 import { drawTitleBlock } from './lettering.js';
 import { drawPalm } from './samples.js';
 
@@ -42,9 +43,32 @@ function gradedPanel(photo, slot, box, grade, strength) {
   v.addColorStop(1, 'rgba(10,0,25,0.42)');
   g.fillStyle = v;
   g.fillRect(0, 0, c.width, c.height);
+  drawSunFlare(g, c.width, c.height, grade, strength);
   if (panelCache.size > 60) panelCache.delete(panelCache.keys().next().value);
   panelCache.set(key, c);
   return c;
+}
+
+/** A low sun's warm bloom from the panel's upper corner, screened over the photo (the Vice City haze). */
+function drawSunFlare(g, w, h, grade, strength) {
+  if (!strength) return;
+  const x = w * 0.86;
+  const y = h * 0.08;
+  const r = Math.hypot(w, h) * 0.75;
+  const f = g.createRadialGradient(x, y, 0, x, y, r);
+  f.addColorStop(0, withAlpha(grade.sun[1], 0.42 * strength));
+  f.addColorStop(0.35, withAlpha(grade.sun[2], 0.16 * strength));
+  f.addColorStop(1, withAlpha(grade.sun[2], 0));
+  g.save();
+  g.globalCompositeOperation = 'screen';
+  g.fillStyle = f;
+  g.fillRect(0, 0, w, h);
+  g.restore();
+}
+
+function withAlpha(hex, a) {
+  const [r, gg, b] = hexToRgb(hex);
+  return `rgba(${r},${gg},${b},${a.toFixed(3)})`;
 }
 
 /** The title cell: a graded sky, a striped sun on the horizon, a glowing perspective grid and two palm silhouettes. */
@@ -113,7 +137,7 @@ function drawTitleCell(ctx, pts, box, grade) {
 export function renderPoster(canvas, doc, photos, opts = {}) {
   const ctx = canvas.getContext('2d');
   const { width: w, height: h } = canvas;
-  const layout = LAYOUTS[doc.layout];
+  const layout = resolveLayout(doc.layout, w, h);
   const grade = GRADES[doc.grade];
   const short = Math.min(w, h);
   ctx.save();
@@ -128,7 +152,9 @@ export function renderPoster(canvas, doc, photos, opts = {}) {
     if (!photo) return;
     ctx.save();
     ctx.clip(polygonPath(pts));
-    ctx.drawImage(gradedPanel(photo, slot, box, grade, doc.strength), box.x, box.y);
+    // the painted sample scenes are already graded: they take a lighter pass so their night colours stay bright
+    const strength = photo.painted ? doc.strength * 0.4 : doc.strength;
+    ctx.drawImage(gradedPanel(photo, slot, box, grade, strength), box.x, box.y);
     ctx.restore();
   });
 
@@ -136,6 +162,9 @@ export function renderPoster(canvas, doc, photos, opts = {}) {
     const { pts, box } = polygonToPixels(layout.title.cell, w, h);
     drawTitleCell(ctx, pts, box, grade);
   }
+
+  const strip = layout.strip ? polygonToPixels(layout.strip, w, h) : null;
+  if (strip) drawCreditStrip(ctx, strip.box, doc.strip, doc.credits, grade);
 
   if (doc.grain) {
     ctx.save();
@@ -158,24 +187,39 @@ export function renderPoster(canvas, doc, photos, opts = {}) {
   ctx.strokeStyle = doc.frame;
   ctx.lineJoin = 'miter';
   ctx.lineWidth = gutter;
-  const cells = layout.title.cell ? [...shapes, polygonToPixels(layout.title.cell, w, h)] : shapes;
+  const cells = [...shapes];
+  if (layout.title.cell) cells.push(polygonToPixels(layout.title.cell, w, h));
+  if (strip) cells.push(strip);
   for (const { pts } of cells) ctx.stroke(polygonPath(pts));
   ctx.lineWidth = gutter * 2;
   ctx.strokeRect(0, 0, w, h);
   ctx.restore();
 
   const tb = titleBox(layout, w, h);
+  if (doc.extras) {
+    const top = layout.labelTop ?? [];
+    const avoid = { x: tb.x, y: tb.y - tb.h * 0.05, w: tb.w, h: tb.h * 1.1 };
+    shapes.forEach(({ box }, i) => drawPanelLabel(ctx, box, doc.panels[i]?.label, grade.ink, short, top.includes(i), avoid));
+  }
   if (layout.title.overlay) {
+    // a soft dark band behind the caption, over the photo panels only
     ctx.save();
-    ctx.clip(polygonPath(shapes[0].pts));
-    const scrim = ctx.createLinearGradient(0, tb.y - tb.h * 0.5, 0, tb.y + tb.h * 1.1);
+    const clip = new Path2D();
+    shapes.forEach(({ pts }) => clip.addPath(polygonPath(pts)));
+    ctx.clip(clip);
+    const scrim = ctx.createLinearGradient(0, tb.y - tb.h * 0.45, 0, tb.y + tb.h * 1.15);
     scrim.addColorStop(0, 'rgba(8,0,20,0)');
-    scrim.addColorStop(1, 'rgba(8,0,20,0.62)');
+    scrim.addColorStop(0.55, 'rgba(8,0,20,0.5)');
+    scrim.addColorStop(1, 'rgba(8,0,20,0.18)');
     ctx.fillStyle = scrim;
-    ctx.fillRect(0, tb.y - tb.h * 0.5, w, tb.h * 1.6 + h);
+    ctx.fillRect(0, tb.y - tb.h * 0.45, w, tb.h * 1.6);
     ctx.restore();
   }
   drawTitleBlock(ctx, tb, doc.title, doc.tagline, doc.style, grade.ink, doc.lean);
+  if (doc.extras && doc.badge) {
+    const b = layout.badge ?? { x: 0.88, y: 0.15, r: 0.1 };
+    drawBadge(ctx, b.x * w, b.y * h, b.r * short, doc.badge, grade.ink);
+  }
 
   if (opts.numbers || opts.selected != null) drawEditorMarks(ctx, shapes, opts, short);
   ctx.restore();
@@ -195,7 +239,7 @@ function drawEditorMarks(ctx, shapes, opts, short) {
       ctx.restore();
     }
     if (opts.numbers) {
-      const x = box.x + r * 1.6;
+      const x = box.x + box.w - r * 1.6;
       const y = box.y + r * 1.6;
       ctx.fillStyle = i === opts.selected ? '#2ef2ff' : 'rgba(10,4,24,0.75)';
       ctx.beginPath();
@@ -213,7 +257,7 @@ function drawEditorMarks(ctx, shapes, opts, short) {
 /** Which photo panel of `doc` holds the canvas point (x, y), or -1. */
 export function panelAt(doc, w, h, x, y) {
   const ctx = hitCanvas.getContext('2d');
-  const polys = LAYOUTS[doc.layout].photos;
+  const polys = resolveLayout(doc.layout, w, h).photos;
   for (let i = polys.length - 1; i >= 0; i--) {
     if (ctx.isPointInPath(polygonPath(polygonToPixels(polys[i], w, h).pts), x, y)) return i;
   }
@@ -223,5 +267,5 @@ const hitCanvas = document.createElement('canvas');
 
 /** The pixel box of photo panel `i` at size w x h. */
 export function panelBox(doc, w, h, i) {
-  return polygonToPixels(LAYOUTS[doc.layout].photos[i], w, h).box;
+  return polygonToPixels(resolveLayout(doc.layout, w, h).photos[i], w, h).box;
 }

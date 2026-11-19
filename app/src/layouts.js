@@ -5,6 +5,29 @@
 const rect = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
 
 export const LAYOUTS = {
+  keyart: {
+    name: 'Key Art',
+    // wide (1920 x 1080): a tall hero, four shots beside it, the caption across the seam, a credit strip below
+    photos: [
+      rect(0, 0, 0.52, 0.86), rect(0.52, 0, 0.27, 0.46), rect(0.79, 0, 0.21, 0.46),
+      rect(0.52, 0.46, 0.2, 0.4), rect(0.72, 0.46, 0.28, 0.4),
+    ],
+    title: { overlay: { x: 0.015, y: 0.5, w: 0.6, h: 0.34 } },
+    badge: { x: 0.505, y: 0.2, r: 0.11 },
+    strip: rect(0, 0.86, 1, 0.14),
+    labelTop: [0],
+    // square and portrait: the hero on top, the caption straddling the middle seam
+    tall: {
+      photos: [
+        rect(0, 0, 0.62, 0.55), rect(0.62, 0, 0.38, 0.275), rect(0.62, 0.275, 0.38, 0.275),
+        rect(0, 0.55, 0.42, 0.34), rect(0.42, 0.55, 0.58, 0.34),
+      ],
+      title: { overlay: { x: 0.03, y: 0.37, w: 0.94, h: 0.3 } },
+      badge: { x: 0.86, y: 0.72, r: 0.1 },
+      strip: rect(0, 0.89, 1, 0.11),
+      labelTop: [0],
+    },
+  },
   mosaic: {
     name: 'Mosaic Nine',
     photos: [
@@ -44,6 +67,12 @@ export const LAYOUTS = {
     title: { overlay: { x: 0.06, y: 0.62, w: 0.88, h: 0.32 } },
   },
 };
+
+/** The layout `id` as drawn at w x h: its `tall` variant (same panel count) when the cover is square or taller. */
+export function resolveLayout(id, w, h) {
+  const layout = LAYOUTS[id] ?? LAYOUTS.keyart;
+  return h >= w && layout.tall ? { ...layout, ...layout.tall } : layout;
+}
 
 /** The most photo panels any layout has: the document keeps this many panel slots. */
 export const MAX_PANELS = Math.max(...Object.values(LAYOUTS).map((l) => l.photos.length));
